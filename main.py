@@ -3,6 +3,9 @@ from pathlib import Path
 import os
 import json
 
+choose_f = '2780'
+choose_p = 19
+choose_v = 0
 
 
 def encode_data():
@@ -32,7 +35,7 @@ def encode_data():
         with open(gt_dir + '/' + gt_file, 'r') as f:
             lines_gt = f.readlines()
 
-        h, m, s = 0, 0, 0
+        h, m, s = '0', '0', '0'
 
         for line in lines_in:
 
@@ -75,15 +78,19 @@ def encode_data():
                     tt.setdefault('s', int(s))
                     tt.setdefault('n', value[i])
 
-                    # print(tt)
+                    ## 用这种思路来做!
+                    # if tt['PC'] == 19 and tt['n'] is not '0.000000':
+                    #     print(tt)
+
                     in_data.append(tt)
 
         #############################
 
+        h, m, s = '0', '0', '0'
 
         for line in lines_gt:
 
-            h, m, s = 0, 0, 0
+            
 
             if '*  ' in line and '/*' not in line:
                 tmp = line.split(' ')
@@ -208,8 +215,8 @@ if __name__ == '__main__':
                     
     #                 for i in in_data:
 
-    #                     # if i['file'] == file and i['PC'] == p and i['v'] == v and i['h'] == h and i['m'] == m and i['s'] == s:
-    #                     #     print(i)
+    #                     if i['file'] == file and i['PC'] == p and i['v'] == v and i['h'] == h and i['m'] == m and i['s'] == s:
+    #                         print(i)
 
     #                     # if i['file'] == file:
     #                     #     print(i)
