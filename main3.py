@@ -1,21 +1,14 @@
-import imp
-from pathlib import Path
 import os
-import json
 from scipy import interpolate
-import sys
-import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from scipy.interpolate import lagrange
-
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import xlwt
 
+
 def get_rms(records):
     return math.sqrt(sum([x ** 2 for x in records]) / len(records))
+
 
 def run_single_curve(choose_f, choose_p, choose_v, method="cubic"):
     save_tag = str(choose_f) + '_PC' + str(choose_p) + '_V' + str(choose_v)
@@ -63,8 +56,8 @@ def run_single_curve(choose_f, choose_p, choose_v, method="cubic"):
                     Xgt.append(x)
                     Ygt.append(y)
     for k in range(len(Xgt) - 1):
-        if not Xgt[k] < Xgt[k+1]:
-            print('Xin Error', Xgt[k], Xgt[k+1])
+        if not Xgt[k] < Xgt[k + 1]:
+            print('Xin Error', Xgt[k], Xgt[k + 1])
 
     #############################
     Xin = []
@@ -99,14 +92,14 @@ def run_single_curve(choose_f, choose_p, choose_v, method="cubic"):
                     Xin.append(x)
                     Yin.append(y)
     for k in range(len(Xin) - 1):
-        if not Xin[k] < Xin[k+1]:
-            print('Xin Error', Xin[k], Xin[k+1])
+        if not Xin[k] < Xin[k + 1]:
+            print('Xin Error', Xin[k], Xin[k + 1])
 
     # 一方面,原本Xgt范围远大于Xin,有无用区间,所以对Xgt在Xin附近截取;
     # 另一方面,Xgt应该在Xin范围内,才能做插值,尤其边界部分不会出错,所以向内取整
     Xin_max, Xin_min = max(Xin), min(Xin)
-    Xgt_max = int((Xin_max // 300) * 300) # 向内取整,为5分钟即300秒的整数倍
-    Xgt_min = int((Xin_min // 300 + 1) * 300) # 向外取整,为5分钟即300秒的整数倍
+    Xgt_max = int((Xin_max // 300) * 300)  # 向内取整,为5分钟即300秒的整数倍
+    Xgt_min = int((Xin_min // 300 + 1) * 300)  # 向外取整,为5分钟即300秒的整数倍
     assert Xgt_max in Xgt and Xgt_min in Xgt
     idx_min = Xgt.index(Xgt_min)
     idx_max = Xgt.index(Xgt_max)
@@ -124,7 +117,7 @@ def run_single_curve(choose_f, choose_p, choose_v, method="cubic"):
         print('PASS! Some unexpected errors happen to File{} PC{} V{}'.format(choose_f, choose_p, choose_v))
         return -1
 
-    print(save_tag,'RMS:', rms)
+    print(save_tag, 'RMS:', rms)
 
     ############################
     fig = plt.figure(figsize=(10, 6))
@@ -142,6 +135,7 @@ def run_single_curve(choose_f, choose_p, choose_v, method="cubic"):
     plt.legend(loc=0,ncol=1)
     plt.savefig(save_dir + save_tag + '.png')
     plt.cla()
+    plt.close()
 
     ############################
     book = xlwt.Workbook(encoding='utf-8', style_compression=0)
@@ -163,30 +157,67 @@ def run_single_curve(choose_f, choose_p, choose_v, method="cubic"):
 
     book.save(save_dir + save_tag + '.xls')
 
-    return rms
+    return rms, Xgt, Ygt, Yout, Ydiff
+
 
 if __name__ == '__main__':
-    files = [str(2780 + i*10) for i in range(0, 15)]
-    PCs = [i for i in range(19,47)]
+    files = [str(2780 + i * 10) for i in range(0, 15)]
+    PCs = [i for i in range(19, 47)]
     Vs = [i for i in range(3)]
 
-    RMSs = []
-    for f in files:
-        RMS_PCs = []
-        for p in PCs:
-            RMS_Vs = []
-            for v in Vs:
-                
+    # book = xlwt.Workbook(encoding='utf-8', style_compression=0)
+    # sheet = book.add_sheet('sheet', cell_overwrite_ok=False)
+    # sheet.write(0, 0, 'Day')
+
+    for p in PCs:
+        row = 0
+        book = xlwt.Workbook(encoding='utf-8', style_compression=0)
+        sheet = book.add_sheet('sheet', cell_overwrite_ok=False)
+        sheet.write(0, 0, 'Day')
+
+        sheet.write(0, 1, 'Xgt0')
+        sheet.write(0, 2, 'Ygt0')
+        sheet.write(0, 3, 'Yout0')
+        sheet.write(0, 4, 'Ydiff0')
+
+        sheet.write(0, 5, 'Xgt1')
+        sheet.write(0, 6, 'Ygt1')
+        sheet.write(0, 7, 'Yout1')
+        sheet.write(0, 8, 'Ydiff1')
+
+        sheet.write(0, 9, 'Xgt2')
+        sheet.write(0, 10, 'Ygt2')
+        sheet.write(0, 11, 'Yout2')
+        sheet.write(0, 12, 'Ydiff2')
+
+        for f in files:
                 try:
-                    rms = run_single_curve(f, p, v)
+                    rms0, Xgt0, Ygt0, Yout0, Ydiff0 = run_single_curve(f, p, 0)
+                    rms1, Xgt1, Ygt1, Yout1, Ydiff1 = run_single_curve(f, p, 1)
+                    rms2, Xgt2, Ygt2, Yout2, Ydiff2 = run_single_curve(f, p, 2)
+
+                    assert len(Xgt0) == len(Xgt1)
+                    assert len(Xgt1) == len(Xgt2)
+
+                    for i in range(len(Xgt0)):
+                        row = row + 1
+                        sheet.write(row, 0, f)
+
+                        sheet.write(row, 1, Xgt0[i])
+                        sheet.write(row, 2, Ygt0[i])
+                        sheet.write(row, 3, Yout0[i])
+                        sheet.write(row, 4, Ydiff0[i])
+
+                        sheet.write(row, 5, Xgt1[i])
+                        sheet.write(row, 6, Ygt1[i])
+                        sheet.write(row, 7, Yout1[i])
+                        sheet.write(row, 8, Ydiff1[i])
+
+                        sheet.write(row, 9, Xgt2[i])
+                        sheet.write(row, 10, Ygt2[i])
+                        sheet.write(row, 11, Yout2[i])
+                        sheet.write(row, 12, Ydiff2[i])
                 except:
-                    print('PASS! Some unexpected errors happen to File{} PC{} V{}'.format(f, p, v))
+                    print('PASS! Some unexpected errors happen to File{} PC{}'.format(f, p))
 
-    #             RMS_Vs.append(rms)
-    #         RMS_PCs.append(RMS_Vs)
-    #     RMSs.append(RMS_PCs)
-    # RMSs = np.array(RMSs)
-    # print(RMSs.shape)
-
-
-
+        book.save('PC' + str(p) + '.xls')
